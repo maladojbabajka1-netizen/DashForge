@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -119,6 +120,57 @@ fun HeroCard() {
 }
 
 @Composable
+fun GeometryDashCard() {
+    val context = LocalContext.current
+
+    val launchIntent = remember {
+        context.packageManager.getLaunchIntentForPackage(
+            "com.robtopx.geometryjump"
+        )
+    }
+
+    val installed = launchIntent != null
+
+    Column(
+        Modifier.fillMaxWidth()
+            .background(PANEL, RoundedCornerShape(20.dp))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.SportsEsports,
+                contentDescription = null,
+                tint = BLUE,
+                modifier = Modifier.size(30.dp)
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Column {
+                Text("GEOMETRY DASH", fontWeight = FontWeight.Bold)
+                Text(
+                    if (installed) "Game detected" else "Game not detected",
+                    color = if (installed) Color(0xFF55D98A)
+                    else Color(0xFFFF7777),
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        Button(
+            onClick = {
+                launchIntent?.let { context.startActivity(it) }
+            },
+            enabled = installed,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (installed) "Launch Geometry Dash" else "Not installed")
+        }
+    }
+}
+
+@Composable
 fun StatCard(
     title: String,
     value: String,
@@ -174,6 +226,7 @@ fun HomeScreen() {
             }
         }
         item { HeroCard() }
+        item { GeometryDashCard() }
         item { Text("OVERVIEW", color = BLUE, fontWeight = FontWeight.Bold) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
