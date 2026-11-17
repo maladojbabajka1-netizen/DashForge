@@ -7,16 +7,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +39,10 @@ enum class Page { HOME, MODS, LIBRARY, SETTINGS }
 @Composable
 fun DashForgeApp() {
     var page by remember { mutableStateOf(Page.HOME) }
+
+    LaunchedEffect(Unit) {
+        ModuleCatalog.registerDefaults()
+    }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = BLUE)) {
         Scaffold(
@@ -121,7 +126,7 @@ fun HeroCard() {
 
 @Composable
 fun GeometryDashCard() {
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val launchIntent = remember {
         context.packageManager.getLaunchIntentForPackage(
@@ -249,17 +254,95 @@ fun HomeScreen() {
 
 @Composable
 fun ModsScreen() {
-    Column(
+    var installed by remember {
+        mutableStateOf(ModuleManager.getInstalled().toSet())
+    }
+
+    val modules = ModuleRegistry.getAll()
+
+    LazyColumn(
         Modifier.fillMaxSize().padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Heading("Mod Menu", "Manage your installed modules")
-        EmptyCard(Icons.Outlined.Extension, "No mods installed",
-            "Your modules will appear here.")
-        Text("FEATURES", color = BLUE, fontWeight = FontWeight.Bold)
-        FeatureCard("Performance", "Coming soon", Icons.Outlined.Speed)
-        FeatureCard("Visuals", "Coming soon", Icons.Outlined.Visibility)
-        FeatureCard("Progress", "Coming soon", Icons.Outlined.Analytics)
+        item {
+            Heading("Mod Menu", "Manage your DashForge modules")
+        }
+
+        item {
+            Text(
+                "${installed.size} MODULES INSTALLED",
+                color = BLUE,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (modules.isEmpty()) {
+            item {
+                EmptyCard(
+                    Icons.Outlined.Extension,
+                    "No modules available",
+                    "Check back later."
+                )
+            }
+        }
+
+        items(modules, key = { it.id }) { module ->
+            val isInstalled = module.id in installed
+
+            Column(
+                Modifier.fillMaxWidth()
+                    .background(PANEL, RoundedCornerShape(18.dp))
+                    .padding(17.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.Extension,
+                        null,
+                        tint = BLUE,
+                        modifier = Modifier.size(28.dp)
+                    )
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column(Modifier.weight(1f)) {
+                        Text(module.name, fontWeight = FontWeight.Bold)
+                        Text(
+                            "v${module.version} • ${module.author}",
+                            color = MUTED,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                Text(
+                    module.description,
+                    color = MUTED,
+                    fontSize = 13.sp
+                )
+
+                Button(
+                    onClick = {
+                        if (isInstalled) {
+                            ModuleManager.uninstall(module.id)
+                        } else {
+                            ModuleManager.install(module.id)
+                        }
+
+                        installed = ModuleManager.getInstalled().toSet()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isInstalled) "Uninstall" else "Install")
+                }
+
+                Text(
+                    if (isInstalled) "Installed" else "Available",
+                    color = if (isInstalled) Color(0xFF55D98A) else MUTED,
+                    fontSize = 11.sp
+                )
+            }
+        }
     }
 }
 
